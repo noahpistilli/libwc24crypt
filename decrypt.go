@@ -6,8 +6,8 @@ import (
 	"fmt"
 )
 
-// decryptWC24 decrypts a WiiConnect24 file.
-func decryptWC24(contents []byte, key []byte) ([]byte, error)  {
+// DecryptWC24 decrypts a WiiConnect24 file.
+func DecryptWC24(contents []byte, key []byte) ([]byte, error) {
 	// First we find out if the passed key is an AES key or wc24pubk.mod file.
 	switch len(key) {
 	case 16:
@@ -24,6 +24,8 @@ func decryptWC24(contents []byte, key []byte) ([]byte, error)  {
 
 	// The IV is located in the encrypted file
 	iv := contents[48:64]
+	fmt.Println(iv)
+	fmt.Println(key)
 
 	// The actual data is located at offset 320
 	data := contents[320:]

@@ -15,14 +15,16 @@ import (
 
 // WC24File represents the header of an encrypted WC24 File
 type WC24File struct {
-	Magic		[4]byte
-	Version		uint32
-	Padding		uint32
-	CryptType	uint8
-	Padding1	[35]byte
+	Magic     [4]byte
+	Version   uint32
+	Padding   uint32
+	CryptType uint8
+	Padding1  [35]byte
+	IV        [16]byte
+	Signature [256]byte
 }
 
-func encryptWC24(contents []byte, key []byte, iv []byte, rsaData []byte) ([]byte, error) {
+func EncryptWC24(contents []byte, key []byte, iv []byte, rsaData []byte) ([]byte, error) {
 	// Load the RSA private key
 	rsaBlock, _ := pem.Decode(rsaData)
 
@@ -55,7 +57,6 @@ func encryptWC24(contents []byte, key []byte, iv []byte, rsaData []byte) ([]byte
 	newData := make([]byte, len(contents))
 	ofb.XORKeyStream(newData, contents)
 
-
 	// Now we set up our header then write the file
 	header := WC24File{
 		Magic:     [4]byte{'W', 'C', '2', '4'},
@@ -64,17 +65,15 @@ func encryptWC24(contents []byte, key []byte, iv []byte, rsaData []byte) ([]byte
 		CryptType: 1,
 		Padding1:  [35]byte{},
 	}
-	
-	
+
+	copy(header.IV[:], iv)
+	copy(header.Signature[:], signature)
+
 	writer := new(bytes.Buffer)
 	err = binary.Write(writer, binary.BigEndian, header)
 	if err != nil {
 		return nil, err
 	}
-
-	// Since the Signature and IV aren't fixed sizes, I can't use them in the struct. As such, here I am
-	binary.Write(writer, binary.BigEndian, iv)
-	binary.Write(writer, binary.BigEndian, signature)
 
 	// Finally, write encrypted data to the byte buffer
 	binary.Write(writer, binary.BigEndian, newData)
